@@ -1,5 +1,5 @@
 # IT-360-001-project
 
-Add details here later 
+CMD Line functionality
 
 adding more here 
