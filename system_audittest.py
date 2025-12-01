@@ -6,9 +6,18 @@ import re
 import sqlite3
 import csv
 import hashlib
+import sys
+import os
 from pathlib import Path
 from datetime import datetime, timedelta
-
+#grabs base directory (Please Work)
+def get_base_dir():
+    if getattr(sys, 'frozen', False):
+        # Running as EXE
+        return Path(sys.executable).parent
+    else:
+        # Running as .py
+        return Path(__file__).parent
 
 # Convert Chrome/Edge timestamps
 def chrome_time_to_datetime(webkit_timestamp):
@@ -203,9 +212,29 @@ def save_browser_history_to_csv(history, filename):
 
 # Make Audit Folder (Works)
 def get_audit_folder():
-    folder = Path.home() / "Desktop" / "Audit"
-    folder.mkdir(exist_ok=True)
-    return folder
+    try:
+        desktop = Path.home() / "Desktop"
+
+        # Try Desktop first
+        if desktop.exists():
+            audit = desktop / "Audit"
+            audit.mkdir(parents=True, exist_ok=True)
+            return audit
+
+        # Desktop not found → try Documents
+        documents = Path.home() / "Documents"
+        if documents.exists():
+            audit = documents / "Audit"
+            audit.mkdir(parents=True, exist_ok=True)
+            return audit
+
+    except Exception as e:
+        print(f"[WARN] Desktop/Documents unavailable: {e}")
+
+    # Absolute fallback → EXE directory
+    audit = get_base_dir() / "Audit"
+    audit.mkdir(parents=True, exist_ok=True)
+    return audit
 
 
 # SHA256 Generator (Pray)
