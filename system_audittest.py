@@ -10,6 +10,35 @@ from pathlib import Path
 from datetime import datetime, timedelta
 
 
+# ========================
+# BLAST LIST CONFIGURATION
+# ========================
+
+# Blacklist patterns for inappropriate/NSFW content detection
+BLAST_LIST = [
+    "porn", "xxx", "adult", "nsfw", "sex", "nude", "onlyfans",
+    "xvideos", "pornhub", "redtube", "xhamster", "youporn",
+    "camgirl", "livejasmin", "chaturbate", "stripchat",
+    "escort", "hookup", "dating", "tinder", "bumble",
+    "gambling", "casino", "poker", "betting", "slots",
+    "torrent", "pirate", "crack", "warez", "keygen"
+]
+
+# Normal URLs for testing the detection system
+NORMAL_URLS = [
+    "https://www.google.com",
+    "https://www.youtube.com",
+    "https://www.github.com",
+    "https://www.stackoverflow.com",
+    "https://www.amazon.com",
+    "https://www.microsoft.com",
+    "https://www.wikipedia.org",
+    "https://www.reddit.com",
+    "https://www.linkedin.com",
+    "https://www.office.com"
+]
+
+
 # Convert Chrome/Edge timestamps
 def chrome_time_to_datetime(webkit_timestamp):
     """
@@ -25,6 +54,25 @@ def chrome_time_to_datetime(webkit_timestamp):
         return converted.strftime("%Y-%m-%d %H:%M:%S")
     except:
         return ""
+
+
+# Check URL Against Blast List
+def check_url_against_blast_list(url):
+    """
+    Check if a URL contains any patterns from the BLAST_LIST.
+    Returns a tuple: (is_flagged: bool, matched_patterns: list)
+    """
+    if not url:
+        return (False, [])
+
+    url_lower = url.lower()
+    matched = []
+
+    for pattern in BLAST_LIST:
+        if pattern in url_lower:
+            matched.append(pattern)
+
+    return (len(matched) > 0, matched)
 
 
 # Read Windows Event Logs
@@ -182,22 +230,87 @@ def read_browser_history_generic(db_path):
     return results
 
 
-# Save Browser History CSV
+# Save Browser History CSV with Blast List Detection
 def save_browser_history_to_csv(history, filename):
     filename = Path(filename)
-    columns = ["URL", "Title", "VisitCount", "LastVisitTime"]
+    columns = ["URL", "Title", "VisitCount", "LastVisitTime", "Flagged", "MatchedPatterns"]
+
+    flagged_count = 0
 
     with filename.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=columns)
         writer.writeheader()
 
         for entry in history:
+            url = entry.get("url", "")
+            is_flagged, matched_patterns = check_url_against_blast_list(url)
+
+            if is_flagged:
+                flagged_count += 1
+
             writer.writerow({
-                "URL": entry.get("url", ""),
+                "URL": url,
                 "Title": entry.get("title", ""),
                 "VisitCount": entry.get("visit_count", ""),
-                "LastVisitTime": entry.get("last_visit_time", "")
+                "LastVisitTime": entry.get("last_visit_time", ""),
+                "Flagged": "YES" if is_flagged else "NO",
+                "MatchedPatterns": ", ".join(matched_patterns) if matched_patterns else ""
             })
+
+        # Add summary section
+        writer.writerow({})  # Empty row for separation
+        writer.writerow({
+            "URL": "=== BLAST LIST DETECTION SUMMARY ===",
+            "Title": "",
+            "VisitCount": "",
+            "LastVisitTime": "",
+            "Flagged": "",
+            "MatchedPatterns": ""
+        })
+        writer.writerow({
+            "URL": f"Total URLs Scanned: {len(history)}",
+            "Title": "",
+            "VisitCount": "",
+            "LastVisitTime": "",
+            "Flagged": "",
+            "MatchedPatterns": ""
+        })
+        writer.writerow({
+            "URL": f"Flagged URLs: {flagged_count}",
+            "Title": "",
+            "VisitCount": "",
+            "LastVisitTime": "",
+            "Flagged": "",
+            "MatchedPatterns": ""
+        })
+        writer.writerow({
+            "URL": f"Clean URLs: {len(history) - flagged_count}",
+            "Title": "",
+            "VisitCount": "",
+            "LastVisitTime": "",
+            "Flagged": "",
+            "MatchedPatterns": ""
+        })
+        writer.writerow({})  # Empty row
+        writer.writerow({
+            "URL": "=== BLAST LIST PATTERNS ===",
+            "Title": "",
+            "VisitCount": "",
+            "LastVisitTime": "",
+            "Flagged": "",
+            "MatchedPatterns": ""
+        })
+        for pattern in BLAST_LIST:
+            writer.writerow({
+                "URL": pattern,
+                "Title": "",
+                "VisitCount": "",
+                "LastVisitTime": "",
+                "Flagged": "",
+                "MatchedPatterns": ""
+            })
+
+    return flagged_count
 
 
 
@@ -254,19 +367,29 @@ def main():
     save_installed_apps_to_csv(apps, apps_csv)
     save_file_hash(apps_csv)
 
-    # Chrome CSV
+    # Chrome CSV with Blast List Detection
+    chrome_flagged = 0
     if chrome:
         chrome_csv = audit / "chrome_history.csv"
-        save_browser_history_to_csv(chrome, chrome_csv)
+        chrome_flagged = save_browser_history_to_csv(chrome, chrome_csv)
         save_file_hash(chrome_csv)
 
-    # Edge CSV
+    # Edge CSV with Blast List Detection
+    edge_flagged = 0
     if edge:
         edge_csv = audit / "edge_history.csv"
-        save_browser_history_to_csv(edge, edge_csv)
+        edge_flagged = save_browser_history_to_csv(edge, edge_csv)
         save_file_hash(edge_csv)
 
+    # Display results
     print(f"✔ Audit complete! Files saved to: {audit}")
+    print(f"\n📊 BLAST LIST DETECTION RESULTS:")
+    if chrome:
+        print(f"   Chrome: {chrome_flagged} flagged URLs out of {len(chrome)} total")
+    if edge:
+        print(f"   Edge: {edge_flagged} flagged URLs out of {len(edge)} total")
+    print(f"   Total Flagged: {chrome_flagged + edge_flagged}")
+    print(f"\n⚠️  Flagged URLs have been marked in the CSV files.")
 
 
 if __name__ == "__main__":
