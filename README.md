@@ -87,15 +87,25 @@ edge_history.csv	Edge browser history (if available)
 Project Structure
 /  
 ├── system_audit.py  
+
 ├── README.md  
-├── Audit/                      (created automatically)
+
+├── Audit/(created automatically)
+
 │   ├── system_audit_output.json
+
 │   ├── system_audit_output.json.sha256
+
 │   ├── installed_apps.csv
+
 │   ├── installed_apps.csv.sha256
+
 │   ├── chrome_history.csv
+
 │   ├── chrome_history.csv.sha256
+
 │   ├── edge_history.csv
+
 │   └── edge_history.csv.sha256
 
 Requirements
