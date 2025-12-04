@@ -1,67 +1,127 @@
 # IT-360-001-project
 
-Windows System Audit Script
+This repository contains a Python-based Windows System Audit tool. The script collects event logs, installed applications, login activity, and browser history, then exports the results into organized JSON and CSV files. All output files are automatically hashed using SHA-256 for integrity verification.
 
-This repository contains a Python script that performs a basic system audit on Windows. It collects event logs, installed applications, login activity, and browser history, then exports the results into JSON and CSV files for further review or analysis.
+The script works both as a standard .py file and when packaged as an executable.
 
 Overview
 
-The script gathers the following information:
+The audit script gathers the following information:
 
-- System and Application Event Logs (latest 50 entries)
-- Installed applications from the Windows Registry
-- Login events (Event ID 4624), including timestamp, username, and source IP
-- Chrome and Edge browser history (URLs, titles, visit count, and converted timestamps)
-- A combined output file named `system_audit_output.json`
+System and Application Event Logs
 
-All generated files appear in the same directory where the script is executed.
+Retrieves the latest 50 entries from:
 
-Features
+System log
 
-Event Logs  
-Retrieves recent entries from Windows system and application logs, including detailed event messages.
+Application log
 
-Installed Software  
-Reads software information from the registry and exports key fields to `installed_apps.csv`.
+Includes event metadata and the full event message text.
 
-Login Activity  
-Extracts successful login events from the Security log using Event ID 4624.
+Installed Applications
 
-Browser History  
-Creates temporary copies of Chrome and Edge history databases to avoid file locking issues, then parses recent visit records.
+Extracts installed software information from the Windows Registry.
 
-Output Formats  
-Produces the following files after execution:
-- `system_audit_output.json`
-- `installed_apps.csv`
-- `chrome_history.csv`
-- `edge_history.csv`
+Exports key information to installed_apps.csv, including:
 
+Display name
+
+Version
+
+Publisher
+
+Install date
+
+Install location and uninstall string
+
+Login Activity (Security Log)
+
+Reads successful login events (Event ID 4624).
+
+Captures:
+
+Timestamp (UTC)
+
+Username
+
+Source IP address
+
+Browser History (Chrome and Edge)
+
+Copies locked browser database files before parsing to prevent access errors.
+
+Extracts:
+
+URL
+
+Title
+
+Visit count
+
+Converted timestamp
+
+Writes results to chrome_history.csv and edge_history.csv if detected.
+
+Output File Hashing
+
+Each generated output file includes an accompanying .sha256 file containing its SHA-256 hash for integrity verification.
+
+Output Files
+
+All audit outputs are stored in an automatically created Audit folder. The script attempts the following locations in order:
+
+Desktop
+
+Documents
+
+Script/executable directory (fallback)
+
+Generated files include:
+
+File	Description
+system_audit_output.json	Consolidated audit results
+installed_apps.csv	Installed applications
+chrome_history.csv	Chrome browser history (if available)
+edge_history.csv	Edge browser history (if available)
+*.sha256	Hash files for each generated output
 Project Structure
-/
-├── system_audit.py
-├── README.md
-├── system_audit_output.json        (created after running)
-├── installed_apps.csv              (created after running)
-├── chrome_history.csv              (created after running)
-└── edge_history.csv                (created after running)
-
-
-Running with Administrator privileges is recommended for full access to Security logs.
+/  
+├── system_audit.py  
+├── README.md  
+├── Audit/                      (created automatically)
+│   ├── system_audit_output.json
+│   ├── system_audit_output.json.sha256
+│   ├── installed_apps.csv
+│   ├── installed_apps.csv.sha256
+│   ├── chrome_history.csv
+│   ├── chrome_history.csv.sha256
+│   ├── edge_history.csv
+│   └── edge_history.csv.sha256
 
 Requirements
 
-- Windows operating system  
-- Python 3  
-- `pywin32` library  
-- Sufficient permissions to read Windows event logs  
+Windows operating system
+
+Python 3
+
+pywin32 library
+
+Permissions to read:
+
+Windows Event Logs
+
+Windows Registry
+
+Browser history files
+
+Administrator privileges are recommended for full access, including Security log events.
 
 Notes
 
-- Browser history files are normally locked while the browser is running; the script works around this by copying the files before reading them.
+Chrome and Edge history data is copied to a temporary database to bypass file-locking issues.
 
-- Some registry entries may not contain all fields, so missing values will appear blank in exported files.
+Some registry keys may not contain all fields, resulting in blank values in the CSV.
 
-- Only the most recent 50 successful login events are included.
+Only the most recent 50 entries are collected for logs, login events, and browser history.
 
-
+Works both as a Python script and when packaged into an executable.
